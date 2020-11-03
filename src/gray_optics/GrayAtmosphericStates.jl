@@ -273,5 +273,105 @@ end
 
 end
 #-------------------------------------------------------------------------
+# Gray Atmospheric State setup for LES data
+function GrayAtmosphericState(
+    nlay::Int,
+    ncol::Int,
+    p_lev::FTA2D,
+    t_lev::FTA2D,
+    z_lev::FTA2D,
+    lat::FTA1D,
+    ::Type{DA},
+) where {
+    I<:Int,
+    FT<:AbstractFloat,
+    FTA1D<:AbstractArray{FT,1},
+    FTA2D<:AbstractArray{FT,2},
+    DA,
+}
 
+    te = FT(300)                   # global mean surface temperature (K)
+    tt = FT(200)                   # skin temp at top of atmosphere (K)
+    Δt = FT(60)
+    α = FT(3.5)                   # lapse rate of radiative equillibrium
+
+    p_lay = DA{FT}(undef, nlay, ncol)
+    t_lay = DA{FT}(undef, nlay, ncol)
+    t_sfc = DA{FT}(undef, ncol)       # surface temperature
+    d0 = DA{FT}(undef, ncol)       # optical depth (function of latitude)
+
+    #------------------
+    max_threads = 256
+    thr_y = min(32, ncol)
+    thr_x = min(Int(floor(FT(max_threads / thr_y))), nlay)
+
+    device = array_device(p_lev)
+    comp_stream = Event(device)
+    workgroup = (thr_x, thr_y)
+
+    comp_stream = compute_play_tlay_tsfc_kernel!(device, workgroup)(
+        p_lev,
+        p_lay,
+        t_lev,
+        t_lay,
+        t_sfc,
+        d0,
+        lat,
+        te,
+        tt,
+        Δt,
+        Val(nlay),
+        Val(ncol),
+        ndrange = (nlay, ncol),
+        dependencies = (comp_stream,),
+    )
+    wait(comp_stream)
+    #------------------
+
+    return GrayAtmosphericState{FT,DA{FT,1},DA{FT,2},Int}(
+        p_lay,
+        p_lev,
+        t_lay,
+        t_lev,
+        z_lev,
+        t_sfc,
+        α,
+        d0,
+        nlay,
+        ncol,
+    )
+end
+#-------------------------------------------------------------------------
+@kernel function compute_play_tlay_tsfc_kernel!(
+    p_lev::FTA2D,
+    p_lay::FTA2D,
+    t_lev::FTA2D,
+    t_lay::FTA2D,
+    t_sfc::FTA1D,
+    d0::FTA1D,
+    lat::FTA1D,
+    te::FT,
+    tt::FT,
+    Δt::FT,
+    ::Val{nlay},
+    ::Val{ncol},
+) where {
+    FT<:AbstractFloat,
+    FTA1D<:AbstractArray{FT,1},
+    FTA2D<:AbstractArray{FT,2},
+    nlay,
+    ncol,
+}
+    glay, gcol = @index(Global, NTuple)  # global col & lay ids
+
+    p_lay[glay, gcol] = (p_lev[glay, gcol] + p_lev[glay+1, gcol]) * FT(0.5)
+    t_lay[glay, gcol] = (t_lev[glay, gcol] + t_lev[glay+1, gcol]) * FT(0.5)
+
+    if glay == 1
+        ts = te + Δt * (FT(1) / FT(3) - sin(lat[gcol])^2) # surface temp at a given latitude (K)
+        d0[gcol] = FT((ts / tt)^FT(4) - FT(1)) # optical depth
+        t_sfc[gcol] = t_lev[1, gcol]
+    end
+end
+#-------------------------------------------------------------------------
 end

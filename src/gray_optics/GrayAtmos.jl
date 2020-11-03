@@ -202,128 +202,128 @@ struct GrayRRTMGP{
     bcs::BC                                       # boundary conditions
     flux::GrayFlux{FT,FTA2D}                      # fluxes
     angle_disc::AngularDiscretization{FT,FTA1D,I} # angular discretization
-
-    function GrayRRTMGP(
-        nlay::Int,
-        lat::FTA1D,
-        p0::FT,
-        pe::FT,
-        optical_props_constructor,
-        sfc_emis::Array{FT,1},
-        flux::GrayFlux{FT,FTA2D},
-        n_gauss_angles::Int,
-        param_set,
-        stype,
-        ::Type{DA},
-    ) where {
-        FT<:AbstractFloat,
-        FTA1D<:AbstractArray{FT,1},
-        FTA2D<:AbstractArray{FT,2},
-        DA,
-    }
-        ncol, ngpt, nbnd = length(lat), 1, 1
-        if stype == "lw"
-            as = setup_gray_as_pr_grid(nlay, lat, p0, pe, param_set, DA)
-            optical_props = optical_props_constructor(FT, ncol, nlay, DA)
-            sf = source_func_longwave_gray_atmos(
-                FT,
-                ncol,
-                nlay,
-                ngpt,
-                optical_props_constructor,
-                DA,
-            )
-            bc = GrayLwBCs(DA, sfc_emis)
-            ang_disc = AngularDiscretization(FT, n_gauss_angles, DA)
-            return new{
-                FT,
-                Int,
-                DA{FT,1},
-                DA{FT,2},
-                DA{FT,3},
-                Bool,
-                typeof(optical_props),
-                typeof(sf),
-                typeof(bc),
-            }(
-                as,
-                optical_props,
-                sf,
-                bc,
-                flux,
-                ang_disc,
-            )
-        else
-            error("Shortwave solver not yet supported")
-        end
-    end
-
-    function GrayRRTMGP(
-        lat::FTA1D,
-        p0::FT,
-        zend::FT,
-        ncls::Int,
-        poly_order::Int,
-        optical_props_constructor,
-        sfc_emis::Array{FT,1},
-        flux::GrayFlux{FT,FTA2D},
-        n_gauss_angles::Int,
-        param_set,
-        stype,
-        ::Type{DA},
-    ) where {
-        FT<:AbstractFloat,
-        FTA1D<:AbstractArray{FT,1},
-        FTA2D<:AbstractArray{FT,2},
-        DA,
-    }
-        nlev = Int(ncls + 1 + (poly_order - 1) * ncls)
-        nlay = Int(nlev - 1)
-        ncol, ngpt, nbnd = length(lat), 1, 1
-        if stype == "lw"
-            as = setup_gray_as_alt_grid(
-                lat,
-                p0,
-                zend,
-                ncls,
-                poly_order,
-                param_set,
-                DA,
-            )
-            optical_props = optical_props_constructor(FT, ncol, nlay, DA)
-            sf = source_func_longwave_gray_atmos(
-                FT,
-                ncol,
-                nlay,
-                ngpt,
-                optical_props_constructor,
-                DA,
-            )
-            bc = GrayLwBCs(DA, sfc_emis)
-            ang_disc = AngularDiscretization(FT, n_gauss_angles, DA)
-            return new{
-                FT,
-                Int,
-                DA{FT,1},
-                DA{FT,2},
-                DA{FT,3},
-                Bool,
-                typeof(optical_props),
-                typeof(sf),
-                typeof(bc),
-            }(
-                as,
-                optical_props,
-                sf,
-                bc,
-                flux,
-                ang_disc,
-            )
-        else
-            error("Shortwave solver not yet supported")
-        end
-    end
-
 end
+
+function GrayRRTMGP(
+    nlay::Int,
+    lat::FTA1D,
+    p0::FT,
+    pe::FT,
+    optical_props_constructor,
+    sfc_emis::Array{FT,1},
+    flux::GrayFlux{FT,FTA2D},
+    n_gauss_angles::Int,
+    param_set,
+    stype,
+    ::Type{DA},
+) where {
+    FT<:AbstractFloat,
+    FTA1D<:AbstractArray{FT,1},
+    FTA2D<:AbstractArray{FT,2},
+    DA,
+}
+    ncol, ngpt, nbnd = length(lat), 1, 1
+    if stype == "lw"
+        as = setup_gray_as_pr_grid(nlay, lat, p0, pe, param_set, DA)
+        optical_props = optical_props_constructor(FT, ncol, nlay, DA)
+        sf = source_func_longwave_gray_atmos(
+            FT,
+            ncol,
+            nlay,
+            ngpt,
+            optical_props_constructor,
+            DA,
+        )
+        bc = GrayLwBCs(DA, sfc_emis)
+        ang_disc = AngularDiscretization(FT, n_gauss_angles, DA)
+        return GrayRRTMGP{
+            FT,
+            Int,
+            DA{FT,1},
+            DA{FT,2},
+            DA{FT,3},
+            Bool,
+            typeof(optical_props),
+            typeof(sf),
+            typeof(bc),
+        }(
+            as,
+            optical_props,
+            sf,
+            bc,
+            flux,
+            ang_disc,
+        )
+    else
+        error("Shortwave solver not yet supported")
+    end
+end
+
+function GrayRRTMGP(
+    lat::FTA1D,
+    p0::FT,
+    zend::FT,
+    ncls::Int,
+    poly_order::Int,
+    optical_props_constructor,
+    sfc_emis::Array{FT,1},
+    flux::GrayFlux{FT,FTA2D},
+    n_gauss_angles::Int,
+    param_set,
+    stype,
+    ::Type{DA},
+) where {
+    FT<:AbstractFloat,
+    FTA1D<:AbstractArray{FT,1},
+    FTA2D<:AbstractArray{FT,2},
+    DA,
+}
+    nlev = Int(ncls + 1 + (poly_order - 1) * ncls)
+    nlay = Int(nlev - 1)
+    ncol, ngpt, nbnd = length(lat), 1, 1
+    if stype == "lw"
+        as = setup_gray_as_alt_grid(
+            lat,
+            p0,
+            zend,
+            ncls,
+            poly_order,
+            param_set,
+            DA,
+        )
+        optical_props = optical_props_constructor(FT, ncol, nlay, DA)
+        sf = source_func_longwave_gray_atmos(
+            FT,
+            ncol,
+            nlay,
+            ngpt,
+            optical_props_constructor,
+            DA,
+        )
+        bc = GrayLwBCs(DA, sfc_emis)
+        ang_disc = AngularDiscretization(FT, n_gauss_angles, DA)
+        return GrayRRTMGP{
+            FT,
+            Int,
+            DA{FT,1},
+            DA{FT,2},
+            DA{FT,3},
+            Bool,
+            typeof(optical_props),
+            typeof(sf),
+            typeof(bc),
+        }(
+            as,
+            optical_props,
+            sf,
+            bc,
+            flux,
+            ang_disc,
+        )
+    else
+        error("Shortwave solver not yet supported")
+    end
+end
+
 
 end

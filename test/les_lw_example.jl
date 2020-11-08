@@ -39,7 +39,7 @@ function les_lw_example(
     max_threads = 256
     # Reading LES data from NetCDF file
     ds =
-        Dataset("test/HadGEM2-A_amip.2004-2008.07_site23_AtmosLESDefault_2020-10-07T12.46.14.887.nc")
+        Dataset("/home/zhaoyi/RRTMGP.jl/test/HadGEM2-A_amip.2004-2008.07_site23_AtmosLESDefault_2020-10-07T12.46.14.887.nc")
 
     nlev = I(ds.dim["z"])
     nlay = nlev - 1

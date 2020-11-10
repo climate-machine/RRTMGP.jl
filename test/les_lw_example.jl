@@ -98,6 +98,24 @@ function les_lw_example(
         param_set,
     )
 
+    ncol = size(gray_rrtmgp.as.p_lay, 2)
+    nlay = size(gray_rrtmgp.as.p_lay, 1)
+    nlev = nlay + 1
+
+    ds =
+        Dataset("/home/zhaoyi/RRTMGP.jl/test/output.nc","c")
+    defDim(ds,"col",ncol)
+    defDim(ds,"lev",nlev)
+
+    pres = defVar(ds, "pres", Float32, ("lev","col"))
+    pres[:,:] = gray_rrtmgp.as.p_lev
+    flux_dn = defVar(ds, "flux_dn", Float32, ("lev","col"))
+    flux_dn[:,:] = gray_rrtmgp.flux.flux_dn
+    flux_up = defVar(ds, "flux_up", Float32, ("lev","col"))
+    flux_up[:,:] = gray_rrtmgp.flux.flux_up
+
+    close(ds)
+
 end
 
 if DA == CuArray

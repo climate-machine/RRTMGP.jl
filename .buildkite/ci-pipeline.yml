@@ -1,13 +1,22 @@
+env:
+  JULIA_VERSION: "1.5.2"
+  CUDA_VERSION: "10.2"
+
 steps:
   - label: "run unit tests CPU"
-    command: "julia --color=yes --project test/runtests.jl"
+    command:
+      - "julia --color=yes --project -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
+      - "julia --color=yes --project test/runtests.jl"
     agents:
       config: cpu 
       queue: central
       slurm_ntasks: 1
       slurm_mem-per-cpu: 5G  
+
   - label: "run units tests GPU"
-    command: "julia --color=yes --project test/runtests_gpu.jl"
+    command:
+      - "julia --color=yes --project -e 'using Pkg; Pkg.instantiate(;verbose=true)'"
+      - "julia --color=yes --project test/runtests_gpu.jl"
     agents:
       config: gpu
       queue: central
